@@ -1,0 +1,16 @@
+# --- Core API ---
+fastapi
+uvicorn
+pydantic-settings
+python-dotenv
+slowapi
+
+# --- CV engine ---
+numpy
+joblib
+Pillow
+opencv-python-headless
+
+# --- Database ---
+sqlalchemy
+psycopg2-binary
