@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     # Global API rate limit.
     DEFAULT_RATE_LIMIT: str = "60/minute"
 
+    ENABLE_DOCS: bool = True
+
     # --- PostgreSQL ---
     # Loaded from the environment / `.env`; no sensitive default values.
     POSTGRES_USER: str | None = None
