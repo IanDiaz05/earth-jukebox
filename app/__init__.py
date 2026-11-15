@@ -1,0 +1,1 @@
+"""SpotiEarth Backend package."""
