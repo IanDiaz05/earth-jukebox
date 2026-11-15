@@ -8,7 +8,8 @@ Source of truth for factual metadata: `data_ingest_resources/DATASETS.md` and
 `data_ingest_resources/README.md`. Frame images were not inspected; folder names
 and dataset docs are assumed correctly labeled.
 
-**Status:** plan only — no CLI ingestion has been run yet.
+**Status:** ingested — 6 playlists and 15 tracks written to PostgreSQL
+(cover URLs are temporary local first-frame placeholders).
 
 **Editorial language:** English (API/product convention). `DATASETS.md` is
 Spanish; switch track titles/descriptions to Spanish on request. Slugs and
@@ -57,7 +58,7 @@ Create these six playlists first (empty), then ingest tracks into them.
 | **category** | `air-quality` |
 | **description** | Near-surface air composition from NASA GEOS-CF model estimates over about two weeks in late 2026. Tracks cover fine particles, ozone, carbon monoxide, and nitrogen oxides. |
 | **featured** | false |
-| **cover-url** | omit |
+| **cover-url** | `data_ingest_resources/air-quality-carbon-monoxide/frame_000_00000001.png` (temp: first frame of first track) |
 
 ### 2. `weather-timelapses`
 
@@ -68,7 +69,7 @@ Create these six playlists first (empty), then ingest tracks into them.
 | **category** | `weather` |
 | **description** | Near-surface weather fields from NASA GEOS-FP forecasts and lightning observed from the International Space Station. |
 | **featured** | false |
-| **cover-url** | omit |
+| **cover-url** | `data_ingest_resources/air-temperature/frame_000_00000001.png` (temp: first frame of first track) |
 
 ### 3. `water-timelapses`
 
@@ -79,7 +80,7 @@ Create these six playlists first (empty), then ingest tracks into them.
 | **category** | `water` |
 | **description** | Global precipitation and near-surface humidity, combining NASA GPM IMERG daily rain rates with GEOS-FP forecast fields. |
 | **featured** | false |
-| **cover-url** | omit |
+| **cover-url** | `data_ingest_resources/humidity/frame_000.png` (temp: first frame of first track) |
 
 ### 4. `climate-timelapses`
 
@@ -90,7 +91,7 @@ Create these six playlists first (empty), then ingest tracks into them.
 | **category** | `climate` |
 | **description** | Multi-year climate signals: sea surface temperature anomalies and a volumetric view of atmospheric carbon dioxide. |
 | **featured** | false |
-| **cover-url** | omit |
+| **cover-url** | `data_ingest_resources/co2-globe/frame_000_TotalCO2_Comp_1920x1920p30_00000.png` (temp: first frame of first track) |
 
 ### 5. `oceans-timelapses`
 
@@ -101,7 +102,7 @@ Create these six playlists first (empty), then ingest tracks into them.
 | **category** | `oceans` |
 | **description** | Ocean surface currents colored by water temperature, from a flat ECCO2 map and a globe fly-through of western boundary currents. |
 | **featured** | false |
-| **cover-url** | omit |
+| **cover-url** | `data_ingest_resources/ocean-tour-temperature/frame_000_t0000.00s.png` (temp: first frame of first track) |
 
 ### 6. `agriculture-timelapses`
 
@@ -112,7 +113,7 @@ Create these six playlists first (empty), then ingest tracks into them.
 | **category** | `agriculture` |
 | **description** | Global land vegetation greenness from MODIS Terra NDVI monthly composites. |
 | **featured** | false |
-| **cover-url** | omit |
+| **cover-url** | `data_ingest_resources/vegetation/frame_2024-01-01.png` (temp: first frame of first track) |
 
 ---
 
@@ -346,37 +347,43 @@ python scripts/ingest_playlist.py create \
   --slug air-quality-timelapses \
   --title "Air Quality Timelapses" \
   --category air-quality \
-  --description "Near-surface air composition from NASA GEOS-CF model estimates over about two weeks in late 2026. Tracks cover fine particles, ozone, carbon monoxide, and nitrogen oxides."
+  --description "Near-surface air composition from NASA GEOS-CF model estimates over about two weeks in late 2026. Tracks cover fine particles, ozone, carbon monoxide, and nitrogen oxides." \
+  --cover-url "data_ingest_resources/air-quality-carbon-monoxide/frame_000_00000001.png"
 
 python scripts/ingest_playlist.py create \
   --slug weather-timelapses \
   --title "Weather Timelapses" \
   --category weather \
-  --description "Near-surface weather fields from NASA GEOS-FP forecasts and lightning observed from the International Space Station."
+  --description "Near-surface weather fields from NASA GEOS-FP forecasts and lightning observed from the International Space Station." \
+  --cover-url "data_ingest_resources/air-temperature/frame_000_00000001.png"
 
 python scripts/ingest_playlist.py create \
   --slug water-timelapses \
   --title "Water Timelapses" \
   --category water \
-  --description "Global precipitation and near-surface humidity, combining NASA GPM IMERG daily rain rates with GEOS-FP forecast fields."
+  --description "Global precipitation and near-surface humidity, combining NASA GPM IMERG daily rain rates with GEOS-FP forecast fields." \
+  --cover-url "data_ingest_resources/humidity/frame_000.png"
 
 python scripts/ingest_playlist.py create \
   --slug climate-timelapses \
   --title "Climate Timelapses" \
   --category climate \
-  --description "Multi-year climate signals: sea surface temperature anomalies and a volumetric view of atmospheric carbon dioxide."
+  --description "Multi-year climate signals: sea surface temperature anomalies and a volumetric view of atmospheric carbon dioxide." \
+  --cover-url "data_ingest_resources/co2-globe/frame_000_TotalCO2_Comp_1920x1920p30_00000.png"
 
 python scripts/ingest_playlist.py create \
   --slug oceans-timelapses \
   --title "Ocean Timelapses" \
   --category oceans \
-  --description "Ocean surface currents colored by water temperature, from a flat ECCO2 map and a globe fly-through of western boundary currents."
+  --description "Ocean surface currents colored by water temperature, from a flat ECCO2 map and a globe fly-through of western boundary currents." \
+  --cover-url "data_ingest_resources/ocean-tour-temperature/frame_000_t0000.00s.png"
 
 python scripts/ingest_playlist.py create \
   --slug agriculture-timelapses \
   --title "Agriculture Timelapses" \
   --category agriculture \
-  --description "Global land vegetation greenness from MODIS Terra NDVI monthly composites."
+  --description "Global land vegetation greenness from MODIS Terra NDVI monthly composites." \
+  --cover-url "data_ingest_resources/vegetation/frame_2024-01-01.png"
 ```
 
 ### Step B — Dry-run every track
@@ -426,7 +433,9 @@ python scripts/ingest_playlist.py show --slug agriculture-timelapses
    without a single reference day (`lightning-globe`, `co2-globe`, ocean current
    tracks).
 5. **No `--frames-url` / `--frames-ext`** — none supplied in the dataset docs.
-6. **No `--featured`** — not requested.
+6. **No `--featured`** — not requested. **`--cover-url`** is a temporary
+   local path to the first frame of each playlist's first track (not a public
+   CDN URL); replace later when public covers exist.
 7. **Duplicate `data/` trees** under some GIBS folders are ignored; ingest the
    parent directory that already holds the frames.
 8. **Skipped salinity and beauty ocean folders** remain on disk for video use only.
@@ -435,10 +444,10 @@ python scripts/ingest_playlist.py show --slug agriculture-timelapses
 
 ## Checklist before write
 
-- [ ] Six playlists created (or confirmed existing with matching intent)
-- [ ] All 15 tracks dry-run OK
-- [ ] Lossy only on `humidity`, `lightning-globe`, `ocean-tour-temperature`
-- [ ] No `--lossy` on `ecco2-sst`
-- [ ] No `--replace` without confirmation
-- [ ] No playlist delete
-- [ ] `ocean-tour-salinity` and `ocean-tour-depth` left uningested
+- [x] Six playlists created (or confirmed existing with matching intent)
+- [x] All 15 tracks dry-run OK
+- [x] Lossy only on `humidity`, `lightning-globe`, `ocean-tour-temperature`
+- [x] No `--lossy` on `ecco2-sst`
+- [x] No `--replace` without confirmation
+- [x] No playlist delete
+- [x] `ocean-tour-salinity` and `ocean-tour-depth` left uningested
