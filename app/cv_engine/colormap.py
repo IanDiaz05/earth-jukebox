@@ -14,7 +14,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from app.ml_engine.exceptions import ColormapError
+from app.cv_engine.exceptions import ColormapError
 
 
 @dataclass(frozen=True)

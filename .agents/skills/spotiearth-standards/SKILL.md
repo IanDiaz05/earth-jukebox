@@ -16,7 +16,7 @@ This skill enforces the core architectural and coding standards for the SpotiEar
 
       * ALL environment variables and global configurations MUST live in `app/core/config.py` using `pydantic-settings`.
       * NEVER use `os.getenv()` or `os.environ` directly in business logic, routers, or engines.
-      * Sub-modules (like `app/ml_engine/`) must remain agnostic to the `.env` file. Pass configurations as arguments from the API layer.
+      * Sub-modules (like `app/cv_engine/`) must remain agnostic to the `.env` file. Pass configurations as arguments from the API layer.
 
 2.  **No Hardcoded Paths**:
 

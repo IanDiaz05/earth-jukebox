@@ -17,7 +17,7 @@ from app.api.v1.router import api_v1_router
 from app.core.config import BASE_DIR, settings
 from app.core.database import SessionLocal, init_db
 from app.core.rate_limit import limiter
-from app.ml_engine import PROFILES, MLEngineError, load_lut
+from app.cv_engine import PROFILES, MLEngineError, load_lut
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ def _check_database() -> None:
         session.execute(text("SELECT 1"))
 
 
-def _ml_engine_state(request: Request) -> str:
+def _cv_engine_state(request: Request) -> str:
     """Report the engine status: ready if at least one profile is usable."""
     if not getattr(request.app.state, "ml_profiles", None):
         return "unavailable"
@@ -134,7 +134,7 @@ async def health_check(request: Request) -> JSONResponse:
             content={
                 "status": "unhealthy",
                 "database": "disconnected",
-                "ml_engine": _ml_engine_state(request),
+                "cv_engine": _cv_engine_state(request),
             },
         )
     return JSONResponse(
@@ -142,6 +142,6 @@ async def health_check(request: Request) -> JSONResponse:
         content={
             "status": "healthy",
             "database": "connected",
-            "ml_engine": _ml_engine_state(request),
+            "cv_engine": _cv_engine_state(request),
         },
     )

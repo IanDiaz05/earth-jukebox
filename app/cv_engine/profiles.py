@@ -16,7 +16,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
-from app.ml_engine.regions import LANDS, OCEANS, WORLD, Region
+from app.cv_engine.regions import LANDS, OCEANS, WORLD, Region
 
 Kind = Literal["sequential", "diverging"]
 
@@ -60,7 +60,7 @@ class DatasetProfile:
         kind: Scale type (see the module header).
         variable: Short name for what is measured.
         colormap_file: Official color table XML. Searched for in
-            ``app/ml_engine/colormaps/`` and, if not found, in the dataset
+            ``app/cv_engine/colormaps/`` and, if not found, in the dataset
             directory. Ignored if ``legend`` is provided.
         sections: ``{section title in XML: short name}``. The first section is
             the primary variable; the others are measured as area fractions.

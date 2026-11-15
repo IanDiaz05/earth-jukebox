@@ -9,15 +9,15 @@ from typing import Any
 import cv2
 import numpy as np
 
-from app.ml_engine.colormap import Lut, invert, load_gibs_colormap, lut_from_legend
-from app.ml_engine.exceptions import (
+from app.cv_engine.colormap import Lut, invert, load_gibs_colormap, lut_from_legend
+from app.cv_engine.exceptions import (
     ColormapError,
     EmptyDirectoryError,
     InvalidProfileError,
     MLEngineError,
 )
-from app.ml_engine.profiles import DatasetProfile
-from app.ml_engine.summarize import FrameValues, region_slices, summarize
+from app.cv_engine.profiles import DatasetProfile
+from app.cv_engine.summarize import FrameValues, region_slices, summarize
 
 SCHEMA_VERSION = "2.2"
 # Official color tables are bundled with the engine.
@@ -75,7 +75,7 @@ def load_frame(path: Path) -> tuple[np.ndarray, np.ndarray]:
 def load_lut(dataset_dir: Path, profile: DatasetProfile) -> Lut:
     """Load the profile's color table: an image legend or official XML.
 
-    Search for the XML first in ``app/ml_engine/colormaps/`` and then in the
+    Search for the XML first in ``app/cv_engine/colormaps/`` and then in the
     dataset directory; the legend image is always in the dataset directory.
     """
     try:

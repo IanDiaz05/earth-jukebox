@@ -14,8 +14,8 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from app.ml_engine.profiles import DatasetProfile
-from app.ml_engine.regions import Region
+from app.cv_engine.profiles import DatasetProfile
+from app.cv_engine.regions import Region
 
 # A cell or region needs at least this fraction of pixels with data.
 MIN_COVERAGE = 0.1

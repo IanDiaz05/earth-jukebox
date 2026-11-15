@@ -9,7 +9,7 @@ from pathlib import Path
 
 import cv2
 
-from app.ml_engine.exceptions import MLEngineError
+from app.cv_engine.exceptions import MLEngineError
 
 
 def extract_frames(video: Path, destino: Path, cada: float = 1.0, maximo: int = 0) -> int:

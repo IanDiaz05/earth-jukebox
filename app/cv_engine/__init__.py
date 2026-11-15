@@ -7,14 +7,14 @@ the pipeline entry point, profiles, and exceptions.
 """
 from __future__ import annotations
 
-from app.ml_engine.exceptions import (
+from app.cv_engine.exceptions import (
     ColormapError,
     EmptyDirectoryError,
     InvalidProfileError,
     MLEngineError,
 )
-from app.ml_engine.pipeline import SCHEMA_VERSION, load_lut, measure_timelapse
-from app.ml_engine.profiles import PROFILES, DatasetProfile, LegendSpec, lossy
+from app.cv_engine.pipeline import SCHEMA_VERSION, load_lut, measure_timelapse
+from app.cv_engine.profiles import PROFILES, DatasetProfile, LegendSpec, lossy
 
 __all__ = [
     "measure_timelapse",
