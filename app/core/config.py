@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     # configuration if the environment variable is missing.
     DATABASE_URL: str = Field(
         ...,
-        description="DSN de conexión a PostgreSQL para SQLAlchemy.",
+        description="PostgreSQL connection DSN for SQLAlchemy.",
     )
 
 

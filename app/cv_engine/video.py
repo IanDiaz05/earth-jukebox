@@ -12,40 +12,40 @@ import cv2
 from app.cv_engine.exceptions import MLEngineError
 
 
-def extract_frames(video: Path, destino: Path, cada: float = 1.0, maximo: int = 0) -> int:
-    """Save a frame every ``cada`` seconds and return the number saved.
+def extract_frames(video: Path, destination: Path, every: float = 1.0, limit: int = 0) -> int:
+    """Save a frame every ``every`` seconds and return the number saved.
 
     Args:
         video: Video file that OpenCV can open.
-        destino: Output directory (created if needed).
-        cada: Seconds between extracted frames.
-        maximo: Maximum number of frames; ``0`` means no limit.
+        destination: Output directory (created if needed).
+        every: Seconds between extracted frames.
+        limit: Maximum number of frames; ``0`` means no limit.
 
     Raises:
-        MLEngineError: If the video cannot be opened or ``cada`` is not positive.
+        MLEngineError: If the video cannot be opened or ``every`` is not positive.
     """
-    if cada <= 0:
-        raise MLEngineError("El intervalo debe ser mayor que cero.")
-    captura = cv2.VideoCapture(str(video))
-    if not captura.isOpened():
-        raise MLEngineError(f"No se pudo abrir el vídeo: {video}")
-    fps = captura.get(cv2.CAP_PROP_FPS) or 25.0
-    paso = max(1, round(fps * cada))
-    destino.mkdir(parents=True, exist_ok=True)
+    if every <= 0:
+        raise MLEngineError("The interval must be greater than zero.")
+    capture = cv2.VideoCapture(str(video))
+    if not capture.isOpened():
+        raise MLEngineError(f"Could not open video: {video}")
+    fps = capture.get(cv2.CAP_PROP_FPS) or 25.0
+    step = max(1, round(fps * every))
+    destination.mkdir(parents=True, exist_ok=True)
 
-    guardados = 0
-    indice = 0
+    saved = 0
+    index = 0
     while True:
-        ok, frame = captura.read()
+        ok, frame = capture.read()
         if not ok:
             break
-        if indice % paso == 0:
-            exito, buffer = cv2.imencode(".png", frame)
-            if exito:
-                buffer.tofile(str(destino / f"frame_{guardados:04d}.png"))
-                guardados += 1
-            if maximo and guardados >= maximo:
+        if index % step == 0:
+            encoded, buffer = cv2.imencode(".png", frame)
+            if encoded:
+                buffer.tofile(str(destination / f"frame_{saved:04d}.png"))
+                saved += 1
+            if limit and saved >= limit:
                 break
-        indice += 1
-    captura.release()
-    return guardados
+        index += 1
+    capture.release()
+    return saved

@@ -8,3 +8,5 @@ __pycache__/
 .mypy_cache/
 *.log
 .DS_Store
+# Downloaded visualization frames (hundreds of MB; see docs/frame_sources.md)
+frames/

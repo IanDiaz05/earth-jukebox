@@ -16,13 +16,14 @@ from app.cv_engine.exceptions import (
     InvalidProfileError,
     MLEngineError,
 )
+from app.cv_engine.globe import find_planet
 from app.cv_engine.profiles import DatasetProfile
 from app.cv_engine.summarize import FrameValues, region_slices, summarize
 
 SCHEMA_VERSION = "2.2"
 # Official color tables are bundled with the engine.
 COLORMAPS_DIR = Path(__file__).resolve().parent / "colormaps"
-VALID_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".webp"})
+VALID_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff"})
 _DATE_PATTERN = re.compile(r"(\d{4}-\d{2}-\d{2})")
 # Above this threshold, too many opaque pixels are absent from the color table:
 # the table or crop most likely does not match the image.
@@ -37,12 +38,12 @@ def _sort_key(path: Path) -> tuple[int, ...]:
 def collect_frames(directory: Path) -> list[Path]:
     """Return the directory's frames in numeric order."""
     if not directory.is_dir():
-        raise EmptyDirectoryError(f"Directorio inexistente: {directory}")
+        raise EmptyDirectoryError(f"Directory does not exist: {directory}")
     frames = [
         p for p in directory.iterdir() if p.is_file() and p.suffix.lower() in VALID_EXTENSIONS
     ]
     if not frames:
-        raise EmptyDirectoryError(f"No hay imágenes en {directory}")
+        raise EmptyDirectoryError(f"No images in {directory}")
     return sorted(frames, key=_sort_key)
 
 
@@ -58,7 +59,7 @@ def load_frame(path: Path) -> tuple[np.ndarray, np.ndarray]:
     raw = np.fromfile(str(path), dtype=np.uint8)
     image = cv2.imdecode(raw, cv2.IMREAD_UNCHANGED)
     if image is None:
-        raise MLEngineError(f"No se pudo leer la imagen: {path}")
+        raise MLEngineError(f"Could not read image: {path}")
     if image.dtype != np.uint8:
         image = cv2.convertScaleAbs(image, alpha=255.0 / np.iinfo(image.dtype).max)
     if image.ndim == 2:
@@ -99,6 +100,22 @@ def load_lut(dataset_dir: Path, profile: DatasetProfile) -> Lut:
         raise InvalidProfileError(str(exc)) from exc
 
 
+def mask_boxes(
+    opaque: np.ndarray, boxes: tuple[tuple[float, float, float, float], ...]
+) -> np.ndarray:
+    """Mark boxes drawn over the map (logos, dates) as no data.
+
+    Boxes are 0-1 fractions of the full image.
+    """
+    if not boxes:
+        return opaque
+    height, width = opaque.shape
+    masked = opaque.copy()
+    for left, top, right, bottom in boxes:
+        masked[round(top * height) : round(bottom * height), round(left * width) : round(right * width)] = False
+    return masked
+
+
 def crop_region(
     rgb: np.ndarray, opaque: np.ndarray, region: tuple[float, float, float, float]
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -110,7 +127,7 @@ def crop_region(
     rows = slice(round(top * height), round(bottom * height))
     cols = slice(round(left * width), round(right * width))
     if rgb[rows, cols].size == 0:
-        raise InvalidProfileError(f"El recorte {region} deja la imagen vacía.")
+        raise InvalidProfileError(f"Crop {region} leaves the image empty.")
     return rgb[rows, cols], opaque[rows, cols]
 
 
@@ -199,6 +216,10 @@ def measure_timelapse(image_directory: Path, profile: DatasetProfile) -> dict[st
     """
     frames = collect_frames(image_directory)
     lut = load_lut(image_directory.parent, profile)
+    if profile.projection == "globe" and profile.regions:
+        raise InvalidProfileError(
+            f"{profile.id}: a globe does not support geographic regions (the view rotates)."
+        )
     region_names = {region.id: region.name for region in profile.regions}
 
     records: list[dict[str, Any]] = []
@@ -206,14 +227,21 @@ def measure_timelapse(image_directory: Path, profile: DatasetProfile) -> dict[st
     shape: tuple[int, int] | None = None
     warnings: list[str] = []
     for index, path in enumerate(frames):
-        rgb, opaque = crop_region(*load_frame(path), profile.data_region)
+        rgb, opaque = load_frame(path)
+        has_alpha = not opaque.all()
+        opaque = mask_boxes(opaque, profile.mask_boxes)
+        rgb, opaque = crop_region(rgb, opaque, profile.data_region)
         if shape is None:
             shape = opaque.shape
         elif opaque.shape != shape:
-            raise MLEngineError(f"{path.name} mide {opaque.shape}, distinto del primer frame {shape}.")
+            raise MLEngineError(f"{path.name} is {opaque.shape}, different from the first frame {shape}.")
 
+        planet = None
+        if profile.projection == "globe" and profile.track_planet:
+            planet = find_planet(rgb, profile.background_max)
+            opaque = opaque & planet.planet
         values = frame_to_values(rgb, opaque, lut, profile)
-        measurement = summarize(values, profile, previous_grid)
+        measurement = summarize(values, profile, previous_grid, planet)
         previous_grid = measurement.grid
 
         record: dict[str, Any] = {"frame_index": index, "frame_id": path.name}
@@ -234,9 +262,9 @@ def measure_timelapse(image_directory: Path, profile: DatasetProfile) -> dict[st
 
         # With frames containing a base map, the entire background is unmatched:
         # warn only when the image has transparency and still has excess colors.
-        if not opaque.all() and measurement.features["unmatched_fraction"] > MAX_UNMATCHED_WARNING:
+        if has_alpha and measurement.features["unmatched_fraction"] > MAX_UNMATCHED_WARNING:
             warnings.append(
-                f"{path.name}: {measurement.features['unmatched_fraction']:.1%} de píxeles fuera de la tabla"
+                f"{path.name}: {measurement.features['unmatched_fraction']:.1%} of pixels outside the table"
             )
 
     world = [record["features"] for record in records]
@@ -251,7 +279,7 @@ def measure_timelapse(image_directory: Path, profile: DatasetProfile) -> dict[st
             # A region with missing data in any frame cannot be played in full.
             for record in records:
                 record["regions"][region.id] = None
-            warnings.append(f"Región {region.name} sin datos suficientes: se omite")
+            warnings.append(f"Region {region.name} has insufficient data: skipped")
             continue
         _, region_stats = _finish_series(present)
         grid_rows, grid_cols = region_slices(region, profile.grid, profile)
@@ -274,6 +302,7 @@ def measure_timelapse(image_directory: Path, profile: DatasetProfile) -> dict[st
         "topic": profile.topic,
         "source": profile.source,
         "kind": profile.kind,
+        "projection": profile.projection,
         "variable": profile.variable,
         "unit": profile.unit if profile.unit is not None else lut.unit,
         "missing_is_zero": profile.kind == "sequential" and profile.missing_is_zero,

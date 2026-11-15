@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="SpotiEarth Backend — motor de análisis de imágenes satelitales.",
+    description="SpotiEarth Backend — satellite imagery analysis engine.",
     docs_url="/docs",
     redoc_url="/redoc",
     openapi_url="/openapi.json",

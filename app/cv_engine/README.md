@@ -35,6 +35,7 @@ without touching the database.
 | `regions.py` | Named geographic boxes: continents and ocean basins |
 | `pipeline.py` | `measure_timelapse`: frames folder → JSON contract |
 | `video.py` | `extract_frames`: PNG frames from a video |
+| `globe.py` | `find_planet`: visible part of the planet on moving-camera globes |
 | `exceptions.py` | `MLEngineError` and derived errors |
 
 ## Adding a visualization
@@ -57,6 +58,9 @@ Main profile fields:
 | `legend` | Alternative: legend bar drawn in an image |
 | `max_delta_e` | Color tolerance; `0` for source PNGs, about 18 for video or JPEG |
 | `data_region` | Area of the image with data, to leave out title and legend |
+| `mask_boxes` | Boxes ignored inside the map (logo, date) without cropping rows or columns |
+| `projection` | `equirectangular` (flat map) or `globe` (planet seen as a sphere; `data_region` is the disk box) |
+| `track_planet`, `background_max` | Moving-camera globe: find the planet in each frame, and maximum brightness of space |
 | `lat_range`, `lon_range` | Geographic extent of the map (equirectangular) |
 | `thresholds`, `shape_threshold` | Named thresholds and which one delimits the shapes |
 | `regions` | Named regions; each one receives the same features as the world |
@@ -67,7 +71,7 @@ Main profile fields:
 `measure_timelapse` returns `{"dataset_info": {...}, "frames": [...]}`. In the database,
 `dataset_info` is saved in `Track.engine_metadata` and `frames` in `Track.frames`.
 
-**`dataset_info`**: `schema_version`, `profile_id`, `title`, `label`, `topic`, `kind`,
+**`dataset_info`**: `schema_version`, `profile_id`, `title`, `label`, `topic`, `kind`, `projection`,
 `unit`, `missing_is_zero`, `value_range`, `thresholds`, `grid_size`, `lat_range`,
 `lon_range`, `hints`, `frames_count`, `feature_names`, `feature_stats` (minimum and maximum
 of each feature), `trends` (linear trend), `warnings`, and `regions`. Each region brings
@@ -94,7 +98,16 @@ relative to the equator. Inside a region they are its thirds, and `north_share` 
 ## Known limits
 
 - Two scale types; categorical (fires) and natural color are missing.
-- Assumes an equirectangular map.
+- Measures equirectangular maps and, with `projection="globe"`, spheres. On a sphere latitude
+  is approximate (assumes a vertical axis) and there is no geographic longitude nor regions,
+  because the view rotates; `centroid_x` is the position in the view. `GLOBE_CO2` is the base
+  profile: other globes derive from it with `replace`.
+- With a moving camera (`track_planet=True`) only the visible part of the planet is measured and
+  positions are relative to it, so values follow what the camera frames.
+- Without a color bar there are no physical values: `scripts/haze_ramp_to_xml.py` builds a
+  relative 0-1 index from the frames (CO2 5115, lightning 5011).
+- Color tables built from SVS color bar images (`scripts/colorbar_to_xml.py`) are read from
+  pixels; the script docstring lists which scale assumptions are confirmed by the ticks.
 - Regions are latitude and longitude boxes, not real outlines.
 - With compressed frames (JPEG quality 85) it recovers between 93% and 98% of the data; with
   source PNGs the reading is exact.

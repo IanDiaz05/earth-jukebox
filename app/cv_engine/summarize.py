@@ -14,6 +14,7 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
+from app.cv_engine.globe import VisiblePlanet
 from app.cv_engine.profiles import DatasetProfile
 from app.cv_engine.regions import Region
 
@@ -74,7 +75,14 @@ class Geometry:
         lon_range: Longitudes of the left and right edges.
         band_edges: Latitudes separating the three bands (south, middle, north).
         split_lat: Latitude separating "north" from "south" in ``north_share``.
-        scale: Pixels per degree, for finding shapes at a constant resolution.
+        projection: ``equirectangular`` (flat map) or ``globe`` (the planet seen
+            as a disk filling the crop). On a globe, latitude comes from the
+            disk curvature, "longitude" is the angle from the view center, and
+            every disk pixel weighs the same. ``lat_range`` and ``lon_range``
+            are ignored.
+        planet: Globe with a moving camera only: the planet's visible part in
+            this frame. Its pixels are weighted and positions are relative to
+            its bounding box.
     """
 
     def __init__(
@@ -84,14 +92,30 @@ class Geometry:
         lon_range: tuple[float, float],
         band_edges: tuple[float, float],
         split_lat: float,
+        projection: str = "equirectangular",
+        planet: VisiblePlanet | None = None,
     ) -> None:
         height, width = shape
-        top, bottom = lat_range
-        left, right = lon_range
-        self.lat = top + (np.arange(height) + 0.5) / height * (bottom - top)
-        self.lon = left + (np.arange(width) + 0.5) / width * (right - left)
-        row_weight = np.cos(np.radians(self.lat)).clip(min=0.0)
-        self.weight = np.repeat(row_weight[:, None], width, axis=1)
+        if projection == "globe":
+            left_px, top_px, right_px, bottom_px = planet.box if planet else (0, 0, width, height)
+            span_y = max(bottom_px - top_px, 1)
+            span_x = max(right_px - left_px, 1)
+            y = np.clip(1.0 - (np.arange(height) + 0.5 - top_px) / span_y * 2.0, -1.0, 1.0)
+            x = np.clip((np.arange(width) + 0.5 - left_px) / span_x * 2.0 - 1.0, -1.0, 1.0)
+            self.lat = np.degrees(np.arcsin(y))
+            self.lon = np.degrees(np.arcsin(x))
+            if planet is not None:
+                self.weight = planet.planet.astype(np.float64)
+            else:
+                self.weight = (x[None, :] ** 2 + y[:, None] ** 2 <= 1.0).astype(np.float64)
+            left, right = -90.0, 90.0
+        else:
+            top, bottom = lat_range
+            left, right = lon_range
+            self.lat = top + (np.arange(height) + 0.5) / height * (bottom - top)
+            self.lon = left + (np.arange(width) + 0.5) / width * (right - left)
+            row_weight = np.cos(np.radians(self.lat)).clip(min=0.0)
+            self.weight = np.repeat(row_weight[:, None], width, axis=1)
         self.total = float(self.weight.sum())
         self.half_span = (right - left) / 2.0
         self.center_lon = (right + left) / 2.0
@@ -295,7 +319,10 @@ def _grid_change(grid: np.ndarray, previous: np.ndarray | None) -> float:
 
 
 def summarize(
-    frame: FrameValues, profile: DatasetProfile, previous_grid: np.ndarray | None
+    frame: FrameValues,
+    profile: DatasetProfile,
+    previous_grid: np.ndarray | None,
+    planet: VisiblePlanet | None = None,
 ) -> FrameMeasurement:
     """Calculate features for the full map and each region, along with the grid.
 
@@ -311,8 +338,23 @@ def summarize(
     """
     shape = frame.values.shape
     world = Geometry(
-        shape, profile.lat_range, profile.lon_range, (-profile.tropics_lat, profile.tropics_lat), 0.0
+        shape,
+        profile.lat_range,
+        profile.lon_range,
+        (-profile.tropics_lat, profile.tropics_lat),
+        0.0,
+        profile.projection,
+        planet,
     )
+    if profile.projection == "globe":
+        # Outside the planet there is no data.
+        inside = world.weight > 0
+        frame = FrameValues(
+            np.where(inside, frame.values, np.float32(0.0)),
+            frame.valid & inside,
+            {name: mask & inside for name, mask in frame.extras.items()},
+            frame.unmatched & inside,
+        )
     features = measure_area(frame, world, profile)
 
     uses_valid = profile.kind == "diverging" or not profile.missing_is_zero

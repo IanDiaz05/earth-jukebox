@@ -105,7 +105,7 @@ def load_gibs_colormap(xml_path: Path, sections: dict[str, str]) -> Lut:
     try:
         root = ET.parse(xml_path).getroot()
     except (ET.ParseError, OSError) as exc:
-        raise ColormapError(f"No se pudo leer la tabla de color {xml_path}: {exc}") from exc
+        raise ColormapError(f"Could not read color table {xml_path}: {exc}") from exc
 
     names = tuple(sections.values())
     rgb: list[tuple[int, int, int]] = []
@@ -141,7 +141,7 @@ def load_gibs_colormap(xml_path: Path, sections: dict[str, str]) -> Lut:
             section.append(index)
 
     if not rgb:
-        raise ColormapError(f"La tabla {xml_path} no tiene entradas para {list(sections)}")
+        raise ColormapError(f"Table {xml_path} has no entries for {list(sections)}")
 
     rgb_array = np.array(rgb, dtype=np.uint8)
     return Lut(
@@ -188,9 +188,9 @@ def lut_from_legend(
     left, top, right, bottom = box
     strip = image_rgb[round(top * height) : round(bottom * height), round(left * width) : round(right * width)]
     if strip.size == 0:
-        raise ColormapError(f"El recorte de la leyenda {box} queda vacío.")
+        raise ColormapError(f"Legend crop {box} is empty.")
     if scale == "log" and (value_min <= 0 or value_max <= 0):
-        raise ColormapError("Una leyenda logarítmica necesita valores positivos.")
+        raise ColormapError("A logarithmic legend needs positive values.")
 
     profile = np.median(strip, axis=1 if vertical else 0)
     if vertical:
