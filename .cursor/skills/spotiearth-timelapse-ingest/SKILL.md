@@ -139,6 +139,8 @@ For every track, the agent must decide:
 11. **Use the CLIs for ingestion.** Do not insert, update, or delete playlists/tracks
     with raw SQL unless the user explicitly requests a database operation outside
     these tools.
+12. **Never edit engine code, profiles, or color tables during ingestion.** A new
+    visualization is a code change, not an ingestion task.
 
 ## Workflow
 
@@ -535,9 +537,28 @@ Unsupported visualizations:
 - Any other visualization without a supported color table.
 
 Skip these and report that a new `DatasetProfile` and color table are required in
-`app/cv_engine/`. The helper scripts `scripts/colorbar_to_xml.py` and
-`scripts/haze_ramp_to_xml.py` exist for building tables, but adding profiles is out
-of scope for this ingestion skill.
+`app/cv_engine/`. Adding a profile is a code change, not an ingestion task.
+
+### Color tables (colormaps)
+
+Every profile measures pixels against its `colormap_file`, an official XML color
+table stored in `app/cv_engine/colormaps/`. The agent never passes a color table on
+the command line and never edits one while ingesting.
+
+Lookup order, implemented by `load_lut()` in `app/cv_engine/pipeline.py`:
+
+1. `app/cv_engine/colormaps/<profile.colormap_file>`.
+2. If that file is missing, `<parent of --dir>/<profile.colormap_file>`.
+
+The fallback lets a table travel with a downloaded dataset, but the filename must
+match the profile exactly (for example `GPM_Precipitation_Rate.xml` for
+`imerg-precipitation`); a table under any other name is ignored. If a profile
+declares a `legend` instead of a `colormap_file`, the legend drawn in the frames is
+used and no XML is read.
+
+To build a new table, use `scripts/colorbar_to_xml.py` (flat maps) or
+`scripts/haze_ramp_to_xml.py` (globes). Registering the profile in `PROFILES` remains
+out of scope for this skill.
 
 ### Description accuracy notes
 
@@ -625,9 +646,10 @@ Option notes:
   `frames_extension`.
 - `--replace`: overwrites an existing track with the same slug, preserving its ID and
   slug; it also moves the track if `--playlist-slug` differs.
-- `--lossy`: sets the color tolerance to 18 for compressed/video-derived frames.
-  Omit it for source PNGs downloaded directly from SVS/GIBS. Do not use it for
-  `ecco2-sst`, whose built-in tolerance is already 30 and would be reduced to 18.
+- `--lossy`: raises the CIELAB color tolerance to ΔE 18 for compressed or
+  video-derived frames. Omit it for source PNGs downloaded directly from SVS/GIBS. Do
+  not use it for `ecco2-sst`, whose built-in tolerance is already 30 and would be
+  reduced to 18.
 - `--dry-run`: measures and prints warnings, then exits before importing the database
   layer. It does not create or check the playlist.
 - `--out`: writes the editorial data, `engine_metadata`, and `frames` as JSON. Use it
@@ -668,6 +690,18 @@ exist), and `grid`.
 The engine, not the agent, produces all measurement data. Never hand-write
 `engine_metadata` or `frames`.
 
+## Video and screenshot sources
+
+The CLI does not extract frames from video. Extract them first, then ingest with
+`--lossy`:
+
+```bash
+python -c "from pathlib import Path; from app.cv_engine.video import extract_frames; print(extract_frames(Path('<video.mp4>'), Path('<frames-dir>'), every=1.0))"
+```
+
+`every` is the number of seconds between extracted frames; `limit` (optional) caps
+the count. Extracted frames are compressed, so they normally need `--lossy`.
+
 ## Error Handling
 
 | Message or symptom | Cause | Action |
@@ -679,7 +713,7 @@ The engine, not the agent, produces all measurement data. Never hand-write
 | `Engine error: No images in <dir>` | Empty folder or wrong extensions | Check the frames and accepted extensions. |
 | `Engine error: <file> is (h, w), different from the first frame` | Mixed frame sizes | Resize or separate the frames; do not ingest. |
 | `Engine error: Could not read image: <file>` | Corrupt/unsupported file | Remove or replace it. |
-| `Engine error: ... color table ...` | Profile/colormap mismatch | Recheck the profile; do not force it. |
+| `Engine error: ... color table ...` | Profile/colormap mismatch or a missing XML | Recheck the profile; confirm `app/cv_engine/colormaps/` or the parent of `--dir` holds the exact `colormap_file` name. Do not force it. |
 | `Database error: ...` | PostgreSQL down or bad `DATABASE_URL` | Start the database and check `.env`. |
 | `Error: directory does not exist` | Wrong `--dir` | Use the track folder path. |
 | `Error: path is not a directory` | Passed a file | Pass the containing folder. |
@@ -694,6 +728,8 @@ Before writing:
 
 - [ ] Every track folder has a supported profile.
 - [ ] Every track folder contains only frames of one visualization and one size.
+- [ ] The profile's color table resolves to a packaged XML or an exact-name XML beside
+      the dataset, and no colormap was edited.
 - [ ] Every track has a unique, valid slug.
 - [ ] Every title is unique within its playlist and ≤ 150 characters.
 - [ ] Every description is plain text, factual, and 1–3 sentences.
