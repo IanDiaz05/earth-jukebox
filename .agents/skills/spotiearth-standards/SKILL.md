@@ -1,3 +1,8 @@
+---
+name: spotiearth-standards
+description: Enforce SpotiEarth architecture and coding standards for the FastAPI backend, including centralized settings, service-layer data access, versioned API routes, async delegation, and clean typed code.
+---
+
 # SpotiEarth Architectural Standards
 
 This skill enforces the core architectural and coding standards for the SpotiEarth backend (FastAPI).
