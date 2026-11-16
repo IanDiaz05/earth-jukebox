@@ -40,6 +40,8 @@ NASA frames ──▶ CV engine (offline) ──▶ PostgreSQL ──▶ FastAPI
 | [services-playlist.md](services-playlist.md) | Playlist database operations |
 | [services-track.md](services-track.md) | Track database operations |
 | [services-ingestion.md](services-ingestion.md) | Storing engine results as tracks |
+| [ingestion.md](ingestion.md) | End-to-end data ingest process and CLI reference |
+| [ingestion-agent-skill.md](ingestion-agent-skill.md) | Custom AI-agent skill for generating and inserting playlists and tracks |
 | [cv-engine-overview.md](cv-engine-overview.md) | Engine purpose, exports, and output contract |
 | [cv-engine-pipeline.md](cv-engine-pipeline.md) | Frame-to-JSON orchestration |
 | [cv-engine-colormap.md](cv-engine-colormap.md) | Color tables and color inversion |
