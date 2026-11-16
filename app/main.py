@@ -91,13 +91,13 @@ app.include_router(api_v1_router, prefix="/api/v1")
 
 
 @app.get("/", tags=["Health"])
-async def root() -> dict[str, str]:
+async def root() -> dict[str, str | None]:
     """Root welcome endpoint."""
     return {
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "status": "ok",
-        "docs": "/docs",
+        "docs": "/docs" if settings.ENABLE_DOCS else None,
     }
 
 

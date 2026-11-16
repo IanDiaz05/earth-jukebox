@@ -31,7 +31,10 @@ class Settings(BaseSettings):
     # Global API rate limit.
     DEFAULT_RATE_LIMIT: str = "60/minute"
 
-    ENABLE_DOCS: bool = True
+    ENABLE_DOCS: bool = Field(
+        default=True,
+        description="Enable interactive API docs (/docs, /redoc) and OpenAPI schema.",
+    )
 
     # --- PostgreSQL ---
     # Loaded from the environment / `.env`; no sensitive default values.
