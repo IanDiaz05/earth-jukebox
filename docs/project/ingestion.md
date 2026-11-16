@@ -10,17 +10,11 @@ the stored data, and measurement never runs inside a request.
 
 ## Overview
 
-```text
-frame folder + profile
-        │
-        ▼
-scripts/ingest_timelapse.py
-        │  measure_timelapse()
-        ▼
-CV engine output (dataset_info + frames)
-        │  ingest_timelapse_result()
-        ▼
-tracks table (engine_metadata + frames as JSONB)
+```mermaid
+flowchart TD
+    Input["Frame folder + profile"] --> CLI["scripts/ingest_timelapse.py"]
+    CLI -->|measure_timelapse()| Engine["CV engine output<br/>dataset_info + frames"]
+    Engine -->|ingest_timelapse_result()| DB["tracks table<br/>engine_metadata + frames as JSONB"]
 ```
 
 The process uses two command-line tools:

@@ -15,10 +15,12 @@ and tracks to the frontend.
 
 ## How it works
 
-```text
-NASA frames            CV engine (offline)              PostgreSQL            Public API              Frontend
-(GIBS / SVS)  ──▶  color table → values → features  ──▶  playlists, tracks  ──▶  GET /api/v1/...  ──▶  audio synthesis
-                   scripts/ingest_timelapse.py           (JSONB frames)        read-only, cached
+```mermaid
+flowchart LR
+    Frames["NASA frames<br/>GIBS / SVS"] --> Engine["CV engine (offline)<br/>color table → values → features<br/>scripts/ingest_timelapse.py"]
+    Engine --> DB["PostgreSQL<br/>playlists and tracks<br/>(JSONB frames)"]
+    DB --> API["Public API<br/>GET /api/v1/...<br/>read-only, cached"]
+    API --> Frontend["Frontend<br/>audio synthesis"]
 ```
 
 1. **Frames** of a NASA visualization are downloaded into a folder (one image per moment).

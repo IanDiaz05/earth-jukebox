@@ -23,14 +23,13 @@ the result in PostgreSQL.
 
 ## Processing flow
 
-```text
-frame folder
-   │
-   ├─ collect frames in numeric order
-   ├─ load the profile's color table (LUT)
-   ├─ per frame: read image → mask/crop → match colors → values
-   ├─ summarize: features, grid, regions
-   └─ dataset_info + frames (JSON, schema 2.2)
+```mermaid
+flowchart TD
+    Frames["Frame folder"] --> Collect["Collect frames in numeric order"]
+    Collect --> LUT["Load the profile's color table (LUT)"]
+    LUT --> Values["Per frame: read image, mask/crop, match colors, values"]
+    Values --> Summarize["Summarize: features, grid, regions"]
+    Summarize --> Contract["dataset_info + frames<br/>(JSON, schema 2.2)"]
 ```
 
 1. **Color table → values.** Each table color maps to a physical value, so every

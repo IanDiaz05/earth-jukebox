@@ -6,10 +6,12 @@ responsibilities and behavior, not a line-by-line walkthrough of the code.
 
 ## How the backend fits together
 
-```text
-NASA frames ──▶ CV engine (offline) ──▶ PostgreSQL ──▶ FastAPI (read-only) ──▶ Frontend
-                app/cv_engine            playlists     app/api/v1             audio
-                                         tracks        app/services           synthesis
+```mermaid
+flowchart LR
+    Frames["NASA frames"] --> Engine["CV engine (offline)<br/>app/cv_engine"]
+    Engine --> DB["PostgreSQL<br/>playlists and tracks"]
+    DB --> API["FastAPI (read-only)<br/>app/api/v1 and app/services"]
+    API --> Frontend["Frontend<br/>audio synthesis"]
 ```
 
 - **CV engine** (`app/cv_engine/`): reads satellite images, converts colors to

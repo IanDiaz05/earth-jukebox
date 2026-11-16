@@ -6,11 +6,11 @@ The engine uses a small exception hierarchy so callers can distinguish data
 problems from configuration problems. Engine code does not raise generic
 `Exception` or `ValueError`.
 
-```text
-MLEngineError
-├── EmptyDirectoryError
-├── InvalidProfileError
-└── ColormapError
+```mermaid
+classDiagram
+    MLEngineError <|-- EmptyDirectoryError
+    MLEngineError <|-- InvalidProfileError
+    MLEngineError <|-- ColormapError
 ```
 
 | Exception | Meaning | Typical cause |

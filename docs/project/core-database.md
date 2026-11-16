@@ -38,6 +38,9 @@ handled separately.
 Database work is synchronous. Routers call service functions through
 `run_in_threadpool` so blocking queries do not stop the event loop.
 
-```text
-route (async) ──run_in_threadpool──▶ service (sync) ──▶ Session ──▶ PostgreSQL
+```mermaid
+flowchart LR
+    Route["Route (async)"] -->|run_in_threadpool| Service["Service (sync)"]
+    Service --> Session["SQLAlchemy Session"]
+    Session --> DB["PostgreSQL"]
 ```
