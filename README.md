@@ -5,13 +5,13 @@ visualization (rainfall, sea temperature, air quality, lightning, ocean currents
 measured frame by frame, and the measurements drive melody, texture and rhythm, so the
 planet's changes can be heard, including by people who cannot see the images.
 
-This repository currently contains the **backend**: the computer-vision engine that turns
-images into data, the offline ingestion tools, and a read-only API that serves playlists
-and tracks to the frontend.
+This repository contains the **backend**: the computer-vision engine that turns images into
+data, the offline ingestion tools, and a read-only API that serves playlists and tracks to
+the frontend.
 
-> **Monorepo in progress.** The repository will grow into a monorepo (backend, frontend
-> and shared tooling). Today everything at the root belongs to the backend; see
-> [Roadmap](#roadmap-monorepo).
+> **Frontend and live app.** The frontend lives in its own repository,
+> [CrisTristan/earth-jukebox-front](https://github.com/CrisTristan/earth-jukebox-front).
+> The deployed application is available at <https://earth-jukebox.space/>.
 
 ## How it works
 
@@ -20,7 +20,7 @@ flowchart LR
     Frames["NASA frames<br/>GIBS / SVS"] --> Engine["CV engine (offline)<br/>color table → values → features<br/>scripts/ingest_timelapse.py"]
     Engine --> DB["PostgreSQL<br/>playlists and tracks<br/>(JSONB frames)"]
     DB --> API["Public API<br/>GET /api/v1/...<br/>read-only, cached"]
-    API --> Frontend["Frontend<br/>audio synthesis"]
+    API --> Frontend["Frontend (separate repo)<br/>audio synthesis"]
 ```
 
 1. **Frames** of a NASA visualization are downloaded into a folder (one image per moment).
@@ -247,18 +247,17 @@ python -m unittest discover -s tests -v
 - Do not commit `.env`, frames, downloaded imagery or caches.
 - AI agents: project skills live in `.agents/skills/` (copies in `.claude/` and `.cursor/`).
 
-## Roadmap: monorepo
+## Frontend
 
-The repository will become a monorepo. The expected direction:
+The frontend (audio synthesis, player and accessible exploration) is maintained in a
+separate repository:
+[CrisTristan/earth-jukebox-front](https://github.com/CrisTristan/earth-jukebox-front).
 
-- Move the current backend into its own package (for example `backend/`), keeping
-  `app/`, `scripts/`, `tests/` and `.devcontainer/` together.
-- Add the frontend (audio synthesis, player and accessible exploration) as a sibling package.
-- Share the track contract (schema version 2.2) between backend and frontend so both sides
-  stay in sync.
+The deployed application is available at <https://earth-jukebox.space/>.
 
-Until that move, paths in this README, `AGENTS.md` and the scripts are relative to the
-repository root.
+Both sides share the track contract (schema version 2.2). Any change to field names or
+shapes is a breaking change: bump the schema version, update this README and the engine
+documentation, and coordinate with the frontend repository.
 
 ## Data sources and credits
 
